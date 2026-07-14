@@ -1,0 +1,10 @@
+{
+  "name": "data-scripts",
+  "private": true,
+  "scripts": {
+    "fetch": "tsx fetch-dataset.ts"
+  },
+  "dependencies": {
+    "tsx": "^4.7.1"
+  }
+}

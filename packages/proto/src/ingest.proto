@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package ingest;
+
+service IngestionService {
+  // Tells the ingestion service to start processing a URL/Dataset
+  rpc StartIngestion (IngestRequest) returns (IngestResponse);
+}
+
+message IngestRequest {
+  string source_url = 1;
+}
+
+message IngestResponse {
+  string job_id = 1;
+  string status = 2; // "queued", "processing", "failed", "completed"
+}

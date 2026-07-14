@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package search;
+
+service SearchService {
+  // Accepts a search query, returns Typesense results
+  rpc HybridSearch (SearchRequest) returns (SearchResponse);
+}
+
+message SearchRequest {
+  string query = 1;
+  int32 k = 2;       // How many results to return (top K)
+  float alpha = 3;   // Weight between Vector and BM25 search
+}
+
+message DocumentHit {
+  string id = 1;
+  string title = 2;
+  string content = 3;
+  string url = 4;
+}
+
+message SearchResponse {
+  repeated DocumentHit results = 1;
+}
