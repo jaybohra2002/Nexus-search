@@ -1,6 +1,6 @@
+import fp from 'fastify-plugin';
 import { FastifyInstance, FastifyError, FastifyReply, FastifyRequest } from 'fastify';
 
-import fp from 'fastify-plugin';
 export const createResponse = (req: FastifyRequest, success: boolean, payload: any) => {
   return {
     success,
@@ -8,15 +8,11 @@ export const createResponse = (req: FastifyRequest, success: boolean, payload: a
     [success ? 'data' : 'error']: payload,
   };
 };
-
-
 async function errorHandlerPlugin(server: FastifyInstance) {
   server.setErrorHandler((error: FastifyError, request: FastifyRequest, reply: FastifyReply) => {
 
-    // Global log Error. (for tracing internally)
     server.log.error({ reqId: request.id, err: error }, 'Global Error Intercepted');
 
-    //Validation Error
     if (error.validation) {
       return reply.status(400).send(
         createResponse(request, false, {
@@ -27,7 +23,6 @@ async function errorHandlerPlugin(server: FastifyInstance) {
       );
     }
 
-    // Rate Limit
     if (error.statusCode === 429) {
       return reply.status(429).send(
         createResponse(request, false, {
@@ -47,5 +42,5 @@ async function errorHandlerPlugin(server: FastifyInstance) {
       })
     );
   });
-}
+};
 export default fp(errorHandlerPlugin);

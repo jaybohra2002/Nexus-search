@@ -41,7 +41,7 @@ pnpm-debug.log*
 # OS Metadata
 .DS_Store
 Thumbs.db
-
+docs
 # Database / Volumes (dockre)
 postgres_data/
 redis_data/

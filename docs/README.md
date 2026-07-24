@@ -11,19 +11,24 @@ docs/
 ├── distributed-systems/               ← Theory: First principles of distributed systems
 │   ├── 01-thundering-herd.md          ← Thundering herd problem + solutions
 │   ├── 02-circuit-breakers.md         ← Circuit breaker pattern (opossum)
-│   ├── 03-caching-strategies.md       ← Cache-aside, write-through, TTL, invalidation
-│   ├── 04-distributed-tracing.md      ← OpenTelemetry, Jaeger, spans, trace IDs
-│   └── 05-feature-flags-canary.md     ← Feature flags, Unleash, canary deployments
+│   ├── 03-zero-hallucinations-rag.md  ← Enterprise RAG, Hybrid Search, Hallucination prevention
+│   ├── 04-chunking-strategies.md      ← Data ingestion, Semantic vs Recursive chunking, Overlaps
+│   ├── 05-caching-strategies.md       ← Cache-aside, write-through, TTL, invalidation
+│   ├── 06-distributed-tracing.md      ← OpenTelemetry, Jaeger, spans, trace IDs
+│   └── 07-feature-flags-canary.md     ← Feature flags, Unleash, canary deployments
 │
 ├── infrastructure/                    ← How our Docker/K8s setup works
 │   ├── 01-docker-networking.md        ← Ports, bridge networks, DNS resolution
 │   ├── 02-docker-compose-guide.md     ← Every service in our compose file explained
 │   └── 03-kubernetes-preview.md       ← K8s concepts: Pods, Deployments, HPA, Ingress
 │
-├── code-explanations/                 ← Line-by-line walkthroughs of our code
-│   ├── api-gateway-server.md          ← The Fastify gateway (Phase 1)
-│   ├── api-gateway-grpc.md            ← gRPC client setup in the gateway
-│   ├── grpc-protobuf.md               ← Protocol Buffers + field tags explained
+├── code-explanations/                 ← Low-level design (LLD) patterns
+│   ├── grpc-protobuf.md               ← Why we use Protobuf over JSON
+│   ├── api-gateway-grpc.md            ← The Fastify gRPC client logic
+│   ├── api-gateway-hardening.md       ← Error handlers and graceful shutdown
+│   ├── api-gateway-autoload.md        ← Domain-driven folder structure
+│   ├── 02-n-tier-architecture.md      ← N-Tier Clean Architecture (Controllers, Services)
+│   ├── 03-api-versioning.md           ← Semantic versioning and Deep Directory Tiering
 │   ├── search-service.md              ← (Upcoming) gRPC server + Typesense
 │   └── ingestion-service.md           ← (Upcoming) BullMQ workers + Ollama
 │

@@ -1,6 +1,7 @@
+import fp from 'fastify-plugin';
 import { FastifyInstance } from 'fastify';
 
-export default async function gracefulShutdownPlugin(server: FastifyInstance) {
+async function gracefulShutdownPlugin(server: FastifyInstance) {
   const shutdown = async (signal: string) => {
     server.log.info(`Received ${signal}. Starting graceful shutdown...`);
 
@@ -13,6 +14,8 @@ export default async function gracefulShutdownPlugin(server: FastifyInstance) {
       process.exit(1);
     }
   };
+
   process.on('SIGINT', () => shutdown('SIGINT'));
   process.on('SIGTERM', () => shutdown('SIGTERM'));
-}
+};
+export default fp(gracefulShutdownPlugin);
