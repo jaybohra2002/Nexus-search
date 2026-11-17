@@ -1,98 +1,118 @@
-# Nexus Search Monorepo
+# Nexus Search
 
-Nexus Search is a highly performant, distributed search and indexing platform designed using microservices architecture. This repository is managed as a monorepo using **pnpm** and **Turborepo** for build caching and pipeline orchestration.
+> **Status: Experimental / work in progress.** Nexus Search is a prototype for a service-oriented hybrid-search system. The repository contains the API gateway, search request contract, gRPC client integration, local infrastructure, and design notes. A complete end-to-end search and ingestion deployment is still being built.
 
----
+Nexus Search explores a search API that can combine lexical relevance (BM25) with vector similarity, with a tunable weight between the two retrieval signals.
 
-## 🏗️ Architecture Overview
+## What is in the repository today
 
-The system is split into multiple service and package boundaries, facilitating high scalability, fault tolerance, and separation of concerns:
+- **Fastify API gateway** organised around plugins and versioned domain modules.
+- **Search endpoint** with Zod validation for `query`, `k`, and `alpha`.
+- **gRPC client integration** using `@grpc/grpc-js` and shared Protocol Buffer contracts.
+- **Shared contracts** for `HybridSearch` and ingestion RPCs in `packages/proto`.
+- **Local infrastructure** provisioned through Docker Compose: PostgreSQL, Redis, and Typesense.
+- **Engineering notes** covering distributed-systems concepts, Docker networking, API design, and service boundaries.
 
-- **`apps/api-gateway`**: A Fastify-based, hardened API gateway. It serves as the external REST API endpoint, providing rate-limiting, CORS, and request validations (via Zod), and maps incoming requests to downstream services via gRPC.
-- **`packages/proto`**: Shared gRPC Protobuf definitions (`search.proto`, `ingest.proto`). It generates types automatically for both clients and servers to ensure consistent service contracts.
-- **`data`**: Local data management, dataset seeding, and ingest script orchestrations.
-- **`docs`**: Comprehensive documentation library covering first principles of distributed systems (thundering herd, circuit breakers, caching, distributed tracing), infrastructure guides, and code walkthroughs.
+## Architecture
 
----
+```mermaid
+flowchart LR
+    User[Client] --> REST[Fastify API Gateway]
+    REST --> Validate[Zod request validation]
+    Validate --> Client[gRPC search client]
+    Client -->|HybridSearch| SearchSvc[SearchService at localhost:50051\nexpected downstream service]
+    SearchSvc -. planned integration .-> TS[(Typesense)]
+    SearchSvc -. planned integration .-> PG[(PostgreSQL)]
+    Ingest[Ingestion pipeline\nplanned] -.-> Redis[(Redis / BullMQ)]
+    Ingest -.-> TS
+```
 
-## 🛠️ Technology Stack
+The API gateway currently calls a gRPC service at `localhost:50051`. The Protocol Buffer contract and client are in this repository; the corresponding complete search-service server is not currently included here. The local Compose file provisions PostgreSQL, Redis, and Typesense, but their presence does not imply that the end-to-end indexing pipeline is complete.
 
-- **Runtime**: [Node.js](https://nodejs.org/) & [TypeScript](https://www.typescriptlang.org/)
-- **Monorepo Manager**: [pnpm Workspaces](https://pnpm.io/workspaces)
-- **Build System**: [Turborepo](https://turbo.build/)
-- **API Gateway**: [Fastify](https://fastify.dev/) (with Zod, Helmet, Rate-Limit, and CORS)
-- **Communication Protocol**: [gRPC](https://grpc.io/) (via `@grpc/grpc-js` and `@grpc/proto-loader`)
-- **Infrastructure**: [Docker Compose](https://www.docker.com/)
-  - **PostgreSQL**: Primary SQL Database (Source of Truth)
-  - **Redis**: BullMQ Queue Broker & Caching Layer
-  - **Typesense**: Vector Database & Search Engine
+## Search contract
 
----
+The REST search request is validated with the following fields:
 
-## 🚀 Getting Started
+| Field | Meaning | Validation |
+|---|---|---|
+| `query` | Text to search for | Non-empty string |
+| `k` | Requested result count | Integer from 1 to 50; defaults to 10 |
+| `alpha` | Weight between vector and BM25 signals | Number from 0 to 1; defaults to 0.5 |
+
+The shared `SearchService.HybridSearch` Protocol Buffer RPC accepts the query, top-`k` value, and alpha weight, and returns document hits.
+
+## Repository layout
+
+```text
+.
+├── apps/
+│   └── api-gateway/
+│       └── src/
+│           ├── modules/v1/       # versioned health and search modules
+│           └── plugins/          # security, error handling, shutdown
+├── packages/
+│   └── proto/src/                # search.proto and ingest.proto
+├── data/                         # local data / seed assets
+├── docs/
+│   ├── distributed-systems/
+│   ├── infrastructure/
+│   ├── code-explanations/
+│   └── learning_log.md
+└── docker-compose.yml
+```
+
+## Technology
+
+- TypeScript and Node.js
+- Fastify, Zod, and Pino
+- gRPC, Protocol Buffers, and `@grpc/grpc-js`
+- pnpm workspaces and Turborepo
+- PostgreSQL, Redis, and Typesense (local Compose dependencies)
+- Docker Compose
+
+## Run locally
 
 ### Prerequisites
 
-Make sure you have the following installed on your machine:
-- **Node.js** (v18+ recommended)
-- **pnpm** (v9+ recommended)
-- **Docker** and **Docker Compose**
+- Node.js
+- pnpm 9
+- Docker and Docker Compose
 
-### 1. Set Up Infrastructure
-
-Spin up the local PostgreSQL, Redis, and Typesense instances in docker containers:
+### Start local dependencies
 
 ```bash
 docker compose up -d
-```
-
-To verify the containers are up and healthy, run:
-```bash
 docker compose ps
 ```
 
-### 2. Install Dependencies
-
-Install the workspace-wide dependencies from the root directory:
+### Install and run the workspace
 
 ```bash
 pnpm install
-```
-
-### 3. Run the Development Server
-
-Start the development build loop for the entire monorepo:
-
-```bash
 pnpm dev
 ```
 
-This command runs `turbo run dev` and starts all workspace applications, including the API Gateway, in hot-reload mode.
-
-### 4. Build for Production
-
-To build all apps and packages inside the monorepo:
+Build the workspace with:
 
 ```bash
 pnpm build
 ```
 
----
+The gateway's gRPC client currently targets `localhost:50051`; a compatible search-service server must be running there for the search request to complete successfully. Starting the Compose dependencies alone does not start that server.
 
-## 📖 Documentation & Deep Dives
+## Security and deployment notes
 
-For structural guides, code explanations, or theoretical concepts, check out the [docs folder](./docs/README.md):
-- [Distributed Systems Best Practices](./docs/distributed-systems/) (e.g., Cache Strategies, Circuit Breakers, Trace IDs)
-- [Infrastructure Setup Details](./docs/infrastructure/)
-- [Code Walkthroughs](./docs/code-explanations/)
+The current gateway security plugin registers Helmet, CORS, and rate limiting. CORS is configured with a wildcard origin in the current source and must be restricted to intended clients before any public deployment. The sample Compose credentials and local service configuration are for development, not production use.
 
----
+## Roadmap
 
-## 📜 Development Scripts
+- Implement and run the gRPC search-service server.
+- Connect the server to Typesense and validate lexical/vector retrieval behaviour.
+- Implement the ingestion pipeline and document lifecycle.
+- Add end-to-end tests covering indexing, search, and failure scenarios.
+- Add measured relevance and latency evaluation with a documented dataset and environment.
+- Tighten CORS, secret handling, observability, and deployment configuration.
 
-Run these commands from the root directory:
+## Engineering notes
 
-*   `pnpm dev` - Starts all apps in development mode with watch/hot-reload.
-*   `pnpm build` - Builds all packages and applications.
-*   `pnpm lint` - Lints code across the entire monorepo.
-*   `pnpm format` - Formats the codebase using Prettier.
+The `docs/` directory records design reasoning and implementation walkthroughs alongside the code. The aim is to keep architectural choices inspectable rather than presenting a diagram without the decisions behind it.
